@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f7a76">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 </head>
 <body>
@@ -68,11 +69,12 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--river-soft);out
 .cat{font-size:12px;color:var(--muted);letter-spacing:.1em}
 .qtext{font-weight:900;font-size:clamp(18px,4.8vw,22px);line-height:1.6;padding-right:110px;text-wrap:pretty;min-height:4.8em}
 .listen{justify-self:start;font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--river);border-radius:99px;padding:3px 12px;cursor:pointer}
-.ans{display:flex;gap:8px}
-.ans input{flex:1;min-width:0;font:inherit;font-size:18px;padding:12px 14px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.ans{display:grid;gap:8px}
+.ansbtn{display:grid;grid-template-columns:1fr auto;gap:8px}
+.ans input{width:100%;min-width:0;font:inherit;font-size:18px;padding:14px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
 .ans input:focus{outline:none;border-color:var(--river)}
-.ans button{font:inherit;font-weight:900;padding:0 18px;border:0;border-radius:6px;background:var(--river);color:var(--paper);cursor:pointer}
-.ans button.pass{background:none;border:1.5px solid var(--line);color:var(--muted);font-weight:700;padding:0 12px}
+.ans button{font:inherit;font-weight:900;font-size:17px;min-height:52px;padding:0 18px;border:0;border-radius:6px;background:var(--river);color:var(--paper);cursor:pointer}
+.ans button.pass{background:none;border:1.5px solid var(--line);color:var(--muted);font-weight:700;padding:0 20px}
 .ans button:disabled,.ans input:disabled{opacity:.5;cursor:default}
 .timer{height:8px;border-radius:99px;background:var(--river-soft);overflow:hidden}
 .timer i{display:block;height:100%;width:100%;background:var(--river);transform-origin:left;transition:background .3s}
@@ -121,6 +123,29 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--river-soft);out
 .rv button{grid-column:2/4;justify-self:start;font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:2px 10px;cursor:pointer}
 .rowbtn{display:flex;gap:8px;flex-wrap:wrap}
 .rowbtn>*{flex:1 1 160px}
+/* スマホ向け */
+button,.tab,.tg{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.tg,.listen,.rv button{min-height:40px}
+.stick{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px;display:grid;gap:6px;margin-inline:-4px;padding-inline:4px}
+.quit{font:inherit;font-size:13px;background:none;border:0;color:var(--muted);text-decoration:underline;padding:10px;justify-self:center;cursor:pointer}
+#next{min-height:48px}
+.card.tapnext{cursor:pointer}
+@media (max-width:560px){
+  body{padding-block:12px 32px}
+  .panel{padding:16px}
+  .card{padding:16px 14px 14px;gap:10px}
+  .qtext{padding-right:0;min-height:0;font-size:19px}
+  .pen{top:auto;bottom:62px;right:6px;width:88px}
+  .pen svg{width:60px;height:60px}
+  .pp{top:34px;font-size:24px}
+  .memo{font-size:13px}
+  .fb{padding-right:88px;min-height:150px}
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .tg{font-size:12px;padding:8px}
+  .rv{grid-template-columns:2em 1fr auto;padding:10px}
+  .pts{font-size:58px}
+  #start{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 6px 18px rgba(0,0,0,.18)}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -146,27 +171,26 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--river-soft);out
 
 <section id="play" hidden>
   <div class="wrap" style="max-width:none">
-    <div class="top"><div class="count" id="count"></div><div class="sofar" id="sofar"></div></div>
-    <div class="dots" id="dots"></div>
+    <div class="stick"><div class="top"><div class="count" id="count"></div><div class="sofar" id="sofar"></div></div>
+    <div class="dots" id="dots"></div></div>
     <div class="card" id="card">
       <div class="cat" id="cat"></div>
       <div class="qtext" id="qtext"></div>
       <button class="listen" id="listen" type="button">🔈 もう一度聞く</button>
       <form class="ans" id="ansForm" autocomplete="off">
-        <input type="text" id="ans" placeholder="答えを書く" enterkeyhint="done">
-        <button type="submit" id="go">答える</button>
-        <button type="button" class="pass" id="pass">パス</button>
+        <input type="text" id="ans" placeholder="ここに答えを書く" enterkeyhint="send" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <div class="ansbtn"><button type="submit" id="go">答える</button><button type="button" class="pass" id="pass">パス</button></div>
       </form>
       <div id="timerWrap"><div class="timer" id="timer"><i id="bar"></i></div><div class="tleft" id="tleft"></div></div>
       <div class="fb" id="fb" hidden>
         <div class="yours" id="yours"></div>
         <div class="right" id="right"></div>
         <div class="kai" id="kai"></div>
-        <div class="nextrow"><span class="auto">解説のあと、自動で次へ進みます</span><button class="sub" id="next" type="button">次へ</button></div>
+        <div class="nextrow"><span class="auto">自動で次へ進みます（カードをタップでもOK）</span><button class="sub" id="next" type="button">次へ</button></div>
       </div>
       <div class="pen" id="pen"></div>
     </div>
-    <button class="sub" id="quit" type="button">やめてテスト選びに戻る</button>
+    <button class="quit" id="quit" type="button">やめてテスト選びに戻る</button>
   </div>
 </section>
 
@@ -362,7 +386,8 @@ async function ask(){
   $("cat").textContent=x.c;$("qtext").textContent=x.q;$("pen").className="pen";$("pen").innerHTML="";
   $("fb").hidden=true;$("ans").value="";$("ans").disabled=$("go").disabled=$("pass").disabled=false;
   $("bar").style.transform="scaleX(1)";$("timer").classList.remove("low");$("tleft").textContent=`${LIMIT}秒`;
-  paintTop();SFX.whoosh();
+  paintTop();SFX.whoosh();card.classList.remove("tapnext");
+  window.scrollTo({top:0,behavior:RM?"auto":"smooth"});
   setTimeout(()=>{if(my===run)try{$("ans").focus({preventScroll:true})}catch(e){}},350);
   await say(`第${idx+1}問。${x.q}`);
   if(my!==run||phase!=="ask")return;
@@ -381,22 +406,25 @@ function stopTimer(){cancelAnimationFrame(tRaf);tRaf=0;}
 $("ansForm").addEventListener("submit",e=>{e.preventDefault();if(phase==="ask")answer("go");});
 $("pass").onclick=()=>{if(phase==="ask")answer("pass");};
 $("listen").onclick=()=>{ac();stopSay();say(Q[idx].q);};
-$("next").onclick=()=>{if(phase==="fb")next();};
+$("next").onclick=e=>{e.stopPropagation();if(phase==="fb")next();};
+$("card").addEventListener("click",e=>{if(phase==="fb"&&!e.target.closest("button,input"))next();});
 
 async function answer(how){
   if(phase!=="ask")return;phase="fb";stopTimer();stopSay();const my=++run;
   const x=Q[idx],raw=how==="pass"?"":$("ans").value;
   const p=grade1(x,raw);marks[idx]=p;answers[idx]=raw;
   const memo=pickM(!norm(raw)?(how==="time"?"time":"blank"):p);
+  try{$("ans").blur()}catch(e){}
   $("ans").disabled=$("go").disabled=$("pass").disabled=true;
+  try{navigator.vibrate&&navigator.vibrate(p===5?[30,40,30]:p===0?120:50)}catch(e){}
   drawPen(p,memo);
   $("card").classList.add(p===5?"ok":p===0?"ng":"part");
   p===5?SFX.ok():p===0?SFX.ng():SFX.part();
   $("yours").textContent=`あなたの答え：${raw.trim()||(how==="time"?"（時間切れ）":"（空欄）")}`;
   $("right").innerHTML=`正解：<b>${x.show}</b>`;$("kai").textContent=x.k;
   $("fb").hidden=false;paintTop();
-  setTimeout(()=>{try{$("next").focus({preventScroll:true})}catch(e){}},50);
-  if(!RM)$("card").scrollIntoView({behavior:"smooth",block:"nearest"});
+  $("card").classList.add("tapnext");
+  setTimeout(()=>{if(!RM)$("fb").scrollIntoView({behavior:"smooth",block:"nearest"});},120);
   await wait(800);if(my!==run)return;
   await say(`${p}点。${memo}。`+(p<5?`正解は、${x.show}。`:"")+x.k);
   if(my!==run)return;
