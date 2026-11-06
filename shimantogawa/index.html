@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>しまんとがわのしましまクイズ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Shippori+Mincho:wght@600;800&family=Yomogi&display=swap">
+<style>
+/* 川の縞が流れる地紋の上に、一枚の答案カードが一問ずつ流れてくる構成 */
+:root{
+  --bg:#f3f6f2; --paper:#ffffff; --ink:#1d2b2a; --muted:#5c6f6b;
+  --river:#1f7a76; --river-soft:#d6ebe7; --stripe:#e6efe9;
+  --ok:#2f7d3c; --ng:#b2413b; --part:#c98a1a; --red:#d42a22; --line:#cfdcd7;
+  --display:"Shippori Mincho","Hiragino Mincho ProN",serif;
+  --body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
+  --hand:"Yomogi","Klee One","Hiragino Maru Gothic ProN",cursive;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1918; --paper:#172423; --ink:#e3ece9; --muted:#9db1ac;
+  --river:#5cc0b8; --river-soft:#1f3a37; --stripe:#132120;
+  --ok:#7fcf8b; --ng:#ee8a83; --part:#e9b44c; --red:#ff7468; --line:#2a3d3a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1918; --paper:#172423; --ink:#e3ece9; --muted:#9db1ac;
+  --river:#5cc0b8; --river-soft:#1f3a37; --stripe:#132120;
+  --ok:#7fcf8b; --ng:#ee8a83; --part:#e9b44c; --red:#ff7468; --line:#2a3d3a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.7;
+  background-image:repeating-linear-gradient(-12deg,transparent 0 22px,var(--stripe) 22px 34px);
+  animation:flow 6s linear infinite;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+@keyframes flow{to{background-position:0 136px}}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50;width:100%;height:100%}
+.wrap{max-width:640px;margin:0 auto;display:grid;gap:14px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:20px}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--river);font-weight:700}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,7vw,38px);line-height:1.25;margin:6px 0 10px;text-wrap:balance}
+h1 span{background:linear-gradient(transparent 62%,var(--river-soft) 62%)}
+.lead{margin:0;color:var(--muted);font-size:14px}
+.rules{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;font-size:12px}
+.rules b{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-weight:500;color:var(--muted)}
+.pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:16px}
+.tab{font:inherit;text-align:left;padding:10px 12px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);cursor:pointer;display:grid;gap:2px}
+.tab span{font-size:12px;color:var(--muted)}
+.tab[aria-pressed="true"]{border-color:var(--river);background:var(--river-soft)}
+.controls{display:flex;flex-wrap:wrap;gap:8px}
+.tg{font:inherit;font-size:13px;font-weight:700;padding:7px 12px;border-radius:99px;border:1.5px solid var(--line);background:var(--paper);color:var(--muted);cursor:pointer}
+.tg[aria-pressed="true"]{border-color:var(--river);color:var(--river);background:var(--river-soft)}
+button.main{font:inherit;font-weight:900;font-size:17px;padding:14px;border:0;border-radius:6px;background:var(--river);color:var(--paper);cursor:pointer;width:100%}
+button.sub{font:inherit;font-weight:700;padding:12px 16px;border:1.5px solid var(--river);border-radius:6px;background:var(--paper);color:var(--river);cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--river-soft);outline-offset:2px}
+
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.count{font-family:var(--display);font-weight:800;font-size:20px;color:var(--river);font-variant-numeric:tabular-nums}
+.count small{font-size:13px;color:var(--muted)}
+.sofar{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dots{display:flex;gap:4px;flex-wrap:wrap}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dots i.now{background:var(--river);transform:scale(1.25)}
+.dots i.s5{background:var(--ok)} .dots i.s3,.dots i.s2{background:var(--part)} .dots i.s0{background:var(--ng)}
+.card{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:20px 20px 18px;display:grid;gap:12px;overflow:hidden}
+.card.enter{animation:enter .55s cubic-bezier(.2,.9,.3,1)}
+@keyframes enter{from{opacity:0;transform:translateX(60px) rotate(1.5deg)}}
+.card.ok{box-shadow:inset 6px 0 0 var(--ok)} .card.part{box-shadow:inset 6px 0 0 var(--part)} .card.ng{box-shadow:inset 6px 0 0 var(--ng)}
+.cat{font-size:12px;color:var(--muted);letter-spacing:.1em}
+.qtext{font-weight:900;font-size:clamp(18px,4.8vw,22px);line-height:1.6;padding-right:110px;text-wrap:pretty;min-height:4.8em}
+.listen{justify-self:start;font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--river);border-radius:99px;padding:3px 12px;cursor:pointer}
+.ans{display:flex;gap:8px}
+.ans input{flex:1;min-width:0;font:inherit;font-size:18px;padding:12px 14px;border:1.5px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.ans input:focus{outline:none;border-color:var(--river)}
+.ans button{font:inherit;font-weight:900;padding:0 18px;border:0;border-radius:6px;background:var(--river);color:var(--paper);cursor:pointer}
+.ans button.pass{background:none;border:1.5px solid var(--line);color:var(--muted);font-weight:700;padding:0 12px}
+.ans button:disabled,.ans input:disabled{opacity:.5;cursor:default}
+.timer{height:8px;border-radius:99px;background:var(--river-soft);overflow:hidden}
+.timer i{display:block;height:100%;width:100%;background:var(--river);transform-origin:left;transition:background .3s}
+.timer.low i{background:var(--red)}
+.tleft{font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;margin-top:2px}
+.fb{border-top:1px dashed var(--line);padding-top:12px;display:grid;gap:6px;font-size:14px}
+.fb .yours{color:var(--muted)}
+.fb .right b{font-size:16px}
+.fb .kai{font-family:var(--hand);color:var(--red);font-size:16px;line-height:1.6}
+.nextrow{display:flex;gap:8px;align-items:center}
+.nextrow .auto{font-size:12px;color:var(--muted);flex:1}
+
+.pen{position:absolute;right:14px;top:14px;width:104px;display:grid;justify-items:center;pointer-events:none;color:var(--red);font-family:var(--hand)}
+.pen svg{width:76px;height:76px;overflow:visible;transform:rotate(-8deg)}
+.pen path{fill:none;stroke:var(--red);stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:400;stroke-dashoffset:400}
+.pen.go path{transition:stroke-dashoffset .34s cubic-bezier(.6,0,.3,1)}
+.pen.go path.d2{transition-delay:.22s}
+.pen.go path,.pen.done path{stroke-dashoffset:0}
+.pp{position:absolute;right:-4px;top:46px;font-size:30px;line-height:1;transform:rotate(-6deg);opacity:0}
+.pp small{font-size:13px}
+.pen.go .pp{transition:opacity .1s .32s,transform .25s .32s;opacity:1;transform:rotate(-6deg) scale(1.08)}
+.pen.done .pp{opacity:1}
+.memo{font-size:15px;line-height:1.3;white-space:nowrap;transform:rotate(-4deg);margin-top:2px;min-height:1.3em}
+
+#score{text-align:center;border:2px solid var(--river)}
+.pts{font-family:var(--display);font-weight:800;font-size:68px;line-height:1;color:var(--river);font-variant-numeric:tabular-nums;margin-top:6px}
+.pts small{font-size:22px;color:var(--muted)}
+.rank{font-family:var(--display);font-weight:800;font-size:26px;margin:10px 0 4px}
+.rdesc{color:var(--muted);font-size:14px;margin:0}
+.ladder{margin:16px auto 0;display:grid;gap:4px;max-width:340px;text-align:left;font-size:13px}
+.ladder div{display:flex;justify-content:space-between;padding:4px 10px;border-radius:4px;color:var(--muted)}
+.ladder div.me{background:var(--river-soft);color:var(--ink);font-weight:700}
+#score.drop .rank{animation:drop .7s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes drop{from{opacity:0;transform:translateY(-60px) scale(1.6)}}
+#score.drop{animation:glow 1.2s ease-out}
+@keyframes glow{0%{box-shadow:0 0 0 0 var(--river)}100%{box-shadow:0 0 0 22px transparent}}
+.pts.shake{animation:shake .5s}
+@keyframes shake{20%,60%{transform:translateX(-6px) rotate(-2deg)}40%,80%{transform:translateX(6px) rotate(2deg)}}
+.review{display:grid;gap:8px}
+.rv{display:grid;grid-template-columns:2.4em 1fr auto;gap:4px 10px;align-items:start;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-size:13px}
+.rv .n{font-family:var(--display);font-weight:800;color:var(--river);font-size:16px;font-variant-numeric:tabular-nums}
+.rv .body{min-width:0}
+.rv .q{font-weight:700}
+.rv .a{color:var(--muted)}
+.rv .p{font-family:var(--hand);color:var(--red);font-size:20px;line-height:1;text-align:right}
+.rv button{grid-column:2/4;justify-self:start;font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:2px 10px;cursor:pointer}
+.rowbtn{display:flex;gap:8px;flex-wrap:wrap}
+.rowbtn>*{flex:1 1 160px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<canvas id="fx"></canvas>
+<div class="wrap">
+
+<section id="home" class="panel">
+  <div class="eyebrow">島津耕造（亀山耕太郎）の歴史</div>
+  <h1><span>しまんとがわの</span><br><span>しましまクイズ</span></h1>
+  <p class="lead">一問一答で進みます。問題が読み上げられ、音楽が流れるなかで一問ずつ答えてください。答えると赤ペン先生がその場で採点し、解説を読んでから次の問題へ流れていきます。</p>
+  <div class="rules"><b>記述式</b><b>全20問・1問5点</b><b>おしいと3点か2点</b><b>1問30秒</b><b>100点満点</b></div>
+  <div id="pick" class="pick"></div>
+</section>
+
+<div class="controls">
+  <button class="tg" id="tgVoice" type="button"></button>
+  <button class="tg" id="tgBgm" type="button"></button>
+  <button class="tg" id="tgSfx" type="button"></button>
+  <button class="tg" id="tgTimer" type="button"></button>
+</div>
+
+<button class="main" id="start" type="button">はじめる</button>
+
+<section id="play" hidden>
+  <div class="wrap" style="max-width:none">
+    <div class="top"><div class="count" id="count"></div><div class="sofar" id="sofar"></div></div>
+    <div class="dots" id="dots"></div>
+    <div class="card" id="card">
+      <div class="cat" id="cat"></div>
+      <div class="qtext" id="qtext"></div>
+      <button class="listen" id="listen" type="button">🔈 もう一度聞く</button>
+      <form class="ans" id="ansForm" autocomplete="off">
+        <input type="text" id="ans" placeholder="答えを書く" enterkeyhint="done">
+        <button type="submit" id="go">答える</button>
+        <button type="button" class="pass" id="pass">パス</button>
+      </form>
+      <div id="timerWrap"><div class="timer" id="timer"><i id="bar"></i></div><div class="tleft" id="tleft"></div></div>
+      <div class="fb" id="fb" hidden>
+        <div class="yours" id="yours"></div>
+        <div class="right" id="right"></div>
+        <div class="kai" id="kai"></div>
+        <div class="nextrow"><span class="auto">解説のあと、自動で次へ進みます</span><button class="sub" id="next" type="button">次へ</button></div>
+      </div>
+      <div class="pen" id="pen"></div>
+    </div>
+    <button class="sub" id="quit" type="button">やめてテスト選びに戻る</button>
+  </div>
+</section>
+
+<section id="result" hidden>
+  <div class="wrap" style="max-width:none">
+    <div id="score" class="panel"></div>
+    <div class="rowbtn"><button class="main" id="again" type="button">もう一度挑戦する</button><button class="sub" id="back" type="button">テスト選びに戻る</button></div>
+    <div class="eyebrow">答案の見直し（「点を直す」で付け直せます）</div>
+    <div class="review" id="review"></div>
+  </div>
+</section>
+</div>
+
+<script>
+/* ===== 問題（新しいテストは TESTS に足す） ===== */
+const TESTS=[
+{t:"第1回　人生編",d:"生まれ、建築の現場、ことば、信条",qs:[
+ {c:"はじまり",q:"「島津耕造」はペンネーム。では、本名をフルネームで書いてください。",a:["亀山耕太郎","かめやまこうたろう"],show:"亀山耕太郎",k:"島津耕造は筆名。会社名のKSも、この筆名から来ています。"},
+ {c:"はじまり",q:"島津耕造が生まれたのは西暦何年？",a:["1994"],num:1994,show:"1994年",k:"1994年、平成6年の生まれです。"},
+ {c:"はじまり",q:"誕生日は何月何日？",a:["1月14日","一月十四日","1/14"],show:"1月14日",k:"冬のまんなか、1月14日生まれ。"},
+ {c:"はじまり",q:"出身は埼玉県の何市？",a:["さいたま市","さいたま","さいたま市南区","文蔵","さいたま市南区文蔵"],show:"さいたま市（南区文蔵）",k:"さいたま市南区の文蔵が生まれた土地です。"},
+ {c:"建築の現場",q:"2018年4月から2020年1月まで勤めた、京都の寺社仏閣専門の建設会社の名前は？",a:["伸和建設","しんわけんせつ"],show:"伸和建設",k:"寺社仏閣を専門にする京都の会社で、建築の現場を踏みました。"},
+ {c:"建築の現場",q:"その会社で、本丸の現場監督を担当した京都の世界遺産は？",a:["二条城","元離宮二条城","にじょうじょう"],show:"二条城",k:"二条城の本丸で現場監督。いまの建築作品の土台はここにあります。"},
+ {c:"建築の現場",q:"建設会社での仕事は、施工管理と、アルファベット3文字の何を使った図面作成？",a:["CAD","きゃど","CAD図面","CAD図面作成"],show:"CAD",k:"施工管理とCADでの図面作成を担当していました。"},
+ {c:"建築の現場",q:"建設会社のあと、大阪で転職した先は「大阪市○○○○○教会」？",a:["コミュニティ","大阪市コミュニティ教会","コミュニティ教会"],show:"大阪市コミュニティ教会",k:"京都の建設会社から大阪へ。そののち千葉へ移ります。"},
+ {c:"ことば",q:"俳句を詠むときの俳号を、漢字4文字で書いてください。",a:["亀川安行"],show:"亀川安行",k:"本名の「亀」をのこした俳号です。"},
+ {c:"ことば",q:"俳号で応募した、第44回の新人賞は「○○現代俳句新人賞」？",a:["兜太","兜太現代俳句新人賞","とうた","兜太賞"],show:"兜太現代俳句新人賞",k:"俳人・金子兜太の名を冠した、現代俳句の新人賞です。"},
+ {c:"ことば",q:"彼が考案した俳句の形式。「自由律俳句」ではなく、何と書く？",a:["自由率俳句","自由率"],show:"自由率俳句",k:"「律」ではなく「率」。Xでは「#自由率俳句」で発信しています。"},
+ {c:"ことば",q:"自由率俳句が占いになる理由を書いた論考。タイトルは「○○のための言葉」？",a:["未来","未来のための言葉","みらい","みらいのためのことば"],show:"未来のための言葉",k:"季語を外した句は、まだない世界を呼び寄せる預言になる、という論です。"},
+ {c:"ことば",q:"太宰治賞の応募作「恋路を邪魔する奴は○○の角に頭をぶつけて死ねないでいろ」。○○は？",a:["豆腐","とうふ"],show:"豆腐",k:"第43回太宰治賞に、筆名・島津耕造で応募する小説です。"},
+ {c:"ことば",q:"『三四郎』『行人』で影響を受けた文豪は？",a:["夏目漱石","漱石","なつめそうせき"],show:"夏目漱石",k:"とくに漱石の後期作品から影響を受けています。"},
+ {c:"信条",q:"彼の哲学では、AIは絵を描く人にとっての何？（漢字1文字）",a:["筆","ふで"],show:"筆",k:"AIは便利な道具ではなく筆。写真家にとってのカメラでもある、という命題です。"},
+ {c:"信条",q:"対になる宣言「人間ができることはただ1つ、○○○」。○は？",a:["エラー","error"],show:"エラー",k:"AIは筆、そして人間にできるのはエラー。二つで一組の宣言です。"},
+ {c:"信条",q:"「精進」ではない。コスパが悪いほど楽しい、という独自の価値観は？",a:["消尽","しょうじん"],show:"消尽",k:"同じ「しょうじん」でも、使い尽くすほうの消尽です。"},
+ {c:"信条",q:"AIを使った画像制作を位置づけた造語「○○○○アート」は？",a:["概念象形","概念象形アート","がいねんしょうけい"],show:"概念象形アート",k:"概念を描くのではなく、概念が宿った現実をつくる表現です。"},
+ {c:"いま",q:"「KS計画研究所」から、2026年9月の打ち合わせで決まった新しい会社名は？",a:["KS企画","けーえすきかく"],show:"KS企画",k:"9月18日の打ち合わせで「KS企画」に決まりました。"},
+ {c:"いま",q:"Discordなどで使っている、カタカナ2文字の呼び名は？",a:["レム","lem"],show:"レム",k:"ツイキャスのアカウント名 lemlemrays にも、レムがいます。"}
+]},
+{t:"第2回　作品編",d:"建築、句集、小説、アプリ",qs:[
+ {c:"建築",q:"建築計画「森の情景」は、東京のどの街に計画された？",a:["秋葉原","あきはばら","アキバ"],show:"秋葉原（アキバ・クリエイティブ・パーク）",k:"別名はアキバ・クリエイティブ・パーク。建物を巡るAI動画も作っています。"},
+ {c:"建築",q:"集合住宅の作品「10の暮らし、10の○○○」。○に入るカタカナは？",a:["レベル","level"],show:"レベル",k:"世帯ごとに色を分けた、10の暮らしの集合住宅です。"},
+ {c:"建築",q:"「10の暮らし」が参照した、洞窟住居で知られるイタリアの街は？",a:["マテーラ","マテラ","matera"],show:"マテーラ",k:"岩をくりぬいた洞窟住居で知られる街です。"},
+ {c:"建築",q:"自由率俳句13句をラカン派精神分析で読み解いて設計した建築は「○○○○の寝所」？",a:["ボロメオ","ボロメオの寝所"],show:"ボロメオの寝所",k:"ラカンの「ボロメオの結び目」に通じる名前です。"},
+ {c:"建築",q:"車椅子でも過ごせる段々畑の平屋「斜めの家」。想定した風土はどこ？",a:["沖縄","おきなわ","沖縄県"],show:"沖縄",k:"行き道と帰り道で回遊できる、沖縄の風土に合わせた家です。"},
+ {c:"建築",q:"ラヴェルの楽譜から導いた建築。もとの曲は「亡き王女のための○○○○○」？",a:["パヴァーヌ","パバーヌ"],show:"パヴァーヌ",k:"楽譜を図面に読みかえる試みです。"},
+ {c:"建築",q:"スタジアムの上に塔を建てる構想。大枠にしたローマの古代建築は？",a:["コロッセオ","コロセウム"],show:"コロッセオ",k:"コロッセオを大枠に、自作スケッチの塔を建てる構想です。"},
+ {c:"建築",q:"建築「ここに在る館」のもとになった絵に書かれた英語は？",a:["IAMHERE","アイアムヒア"],show:"I AM HERE",k:"英語名は House of Hereness です。"},
+ {c:"建築",q:"滝に打たれる姿を幾何学に抽象化した瞑想施設は「幾何学的○○建築」？",a:["滝行","たきぎょう","幾何学的滝行建築"],show:"幾何学的滝行建築",k:"台本つきの画像13枚で構成する作品です。"},
+ {c:"建築",q:"自作スケッチ発の建築「水冠の塔と○○の家」。○○は？（漢字2文字）",a:["灯守","灯守の家"],show:"灯守の家",k:"塔と、それを守る家の組み合わせです。"},
+ {c:"句と小説",q:"15句から建築を設計した句集「キャラメルポップコーンは○○」。○○は？",a:["膿む","うむ"],show:"膿む",k:"句の意味内容から建築を立ち上げ、動画にする計画です。"},
+ {c:"句と小説",q:"自作小説「城の図面」の改稿版の仮題は？",a:["三本の塔","さんぼんのとう","3本の塔"],show:"三本の塔",k:"アニメ化とPC向けシナリオゲーム化も計画しています。"},
+ {c:"句と小説",q:"自由率俳句で自分を占って出た句「俺の手で○○○○○いた土を踏む」。○は？",a:["腐らせて","くさらせて"],show:"腐らせて",k:"この句の情景から、建築を一棟設計しています。"},
+ {c:"アプリと遊び",q:"樹冠ごとに作家を分けて展示する、自作のバーチャル美術館の名前は？",a:["大蛙美術館","DaiYMuseum","大蛙"],show:"大蛙美術館（DaiY Museum）",k:"森の情景の樹冠を展示室にする構想です。"},
+ {c:"アプリと遊び",q:"自分の作品や経験を札にした、自作の対戦カードゲームの名前は？",a:["夜札","よふだ"],show:"夜札（よふだ）",k:"GitHub Pagesで公開しています。"},
+ {c:"アプリと遊び",q:"声だけで練習する、自作のAI英会話アプリの名前は？",a:["英会話ラボ","えいかいわらぼ","eikaiwalab"],show:"英会話ラボ",k:"発音・文法・語彙・流暢さのフィードバックを目指しています。"},
+ {c:"アプリと遊び",q:"話者を判別できる、自作の文字起こしアプリの名前は？",a:["ワケル","wakeru"],show:"ワケル（wakeru）",k:"話し手を「分ける」から来た名前です。"},
+ {c:"アプリと遊び",q:"トレンドを新聞の一面風に見せるアプリ「EN新聞」。そのコラムの名前は？",a:["顕現志向","けんげんしこう"],show:"顕現志向",k:"「志向縁」という考え方とつながるコラムです。"},
+ {c:"アプリと遊び",q:"Netlifyで公開している対話型Webアプリ「素御」。読み方をひらがなで。",a:["すみあ","sumia"],show:"すみあ",k:"素御と書いて、すみあ。"},
+ {c:"これから",q:"ポーラ美術振興財団の在外研修で、研修先に希望した国は？",a:["タイ","タイ王国","thailand"],show:"タイ",k:"「10の暮らし、10のレベル」のAI動画で応募します。"}
+]}
+];
+const RANKS=[
+ [100,"しまんとの主","島津耕造そのもの。あるいは本人。"],
+ [80,"清流のしましま","縞模様まで見えている、かなりの通。"],
+ [60,"中流のしましま","流れの真ん中にいます。あと少しで清流。"],
+ [40,"支流のしましま","本流に合流する手前。作品をもっと見よう。"],
+ [20,"小川のしましま","せせらぎ程度。まずは自由率俳句から。"],
+ [0,"水たまり","これから雨が降れば川になります。"]
+];
+const LIMIT=30;
+
+/* ===== 設定 ===== */
+const RM=matchMedia("(prefers-reduced-motion:reduce)").matches;
+const PREF={voice:true,bgm:true,sfx:true,timer:true};
+try{Object.assign(PREF,JSON.parse(localStorage.getItem("shima-pref")||"{}"))}catch(e){}
+const savePref=()=>{try{localStorage.setItem("shima-pref",JSON.stringify(PREF))}catch(e){}};
+const $=id=>document.getElementById(id);
+
+/* ===== 音（効果音とBGMはその場で合成） ===== */
+let AC=null,sfxBus=null,bgmBus=null;
+function ac(){try{if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();
+  sfxBus=AC.createGain();sfxBus.connect(AC.destination);
+  const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=2600;
+  bgmBus=AC.createGain();bgmBus.gain.value=0;bgmBus.connect(lp);lp.connect(AC.destination);}
+  if(AC.state==="suspended")AC.resume();}catch(e){AC=null}return AC}
+function tone(f,t0,dur,type="sine",vol=.18,f2,bus){const a=ac();if(!a)return;const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+Math.max(0,t0);
+  o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g);g.connect(bus||sfxBus);o.start(t);o.stop(t+dur+.05);}
+function noise(t0,dur,vol=.25,hp=800){const a=ac();if(!a)return;const b=a.createBuffer(1,Math.max(1,Math.floor(a.sampleRate*dur)),a.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);
+  const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=b;f.type="highpass";f.frequency.value=hp;g.gain.value=vol;
+  s.connect(f);f.connect(g);g.connect(sfxBus);s.start(a.currentTime+t0);}
+const S=fn=>(...a)=>{if(PREF.sfx)fn(...a)};
+const SFX={
+  ok:S(()=>{noise(0,.06,.3,300);tone(880,0,.25,"triangle",.2);tone(1320,.07,.35,"triangle",.16);}),
+  part:S(()=>{noise(0,.06,.25,300);tone(660,0,.18,"triangle",.16);tone(740,.09,.25,"triangle",.12);}),
+  ng:S(()=>{noise(0,.06,.3,300);tone(160,0,.3,"sawtooth",.12,110);}),
+  pen:S((t0=0,d=.12)=>noise(t0,d,.12,2500)),
+  tick:S(()=>tone(1800,0,.03,"square",.04)),
+  warn:S(()=>tone(990,0,.08,"square",.05)),
+  whoosh:S(()=>{noise(0,.35,.16,600);tone(300,0,.3,"sine",.06,700);}),
+  splash:S(()=>{noise(0,.6,.35,1200);noise(.05,.4,.2,3000);}),
+  rank:S(total=>{
+    if(total>=100)[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,i*.11,i===6?.9:.18,"square",.09));
+    else if(total>=60)[523,659,784,1047].forEach((f,i)=>tone(f,i*.12,i===3?.6:.18,"triangle",.18));
+    else if(total>=20)[392,523,659].forEach((f,i)=>tone(f,i*.15,.3,"triangle",.16));
+    else [392,370,349,330].forEach((f,i)=>tone(f,i*.25,.35,"sawtooth",.08));})
+};
+/* BGM：せせらぎのようなアルペジオ（Fmaj7→Em7→Dm7→Cmaj7） */
+const CH=[[53,57,60,64,69],[52,55,59,62,67],[50,53,57,60,65],[48,52,55,59,64]];
+const mf=m=>440*Math.pow(2,(m-69)/12);
+let bgmTimer=0,bgmStep=0,bgmNext=0,duck=false;
+function bgmLevel(){if(!AC||!bgmBus)return;const v=!PREF.bgm||!bgmTimer?0:duck?.25:1;bgmBus.gain.setTargetAtTime(v,AC.currentTime,.25);}
+function bgmStart(){const a=ac();if(!a||bgmTimer)return;bgmNext=a.currentTime+.1;bgmStep=0;
+  bgmTimer=setInterval(()=>{while(bgmNext<a.currentTime+.3){
+    const bar=Math.floor(bgmStep/8)%4,s=bgmStep%8,ch=CH[bar],t=bgmNext-a.currentTime,pat=[0,2,4,3,1,3,4,2];
+    if(s===0){tone(mf(ch[0]-12),t,2.6,"sine",.11,null,bgmBus);[1,2,3].forEach(k=>tone(mf(ch[k]),t,2.6,"sine",.025,null,bgmBus));}
+    tone(mf(ch[pat[s]]+12),t,.5,"triangle",.045,null,bgmBus);
+    if(s===5&&Math.random()<.5)tone(mf(ch[4]+24),t,.6,"sine",.02,null,bgmBus);
+    bgmNext+=60/84/2;bgmStep++;}},80);
+  bgmLevel();}
+function bgmStop(){clearInterval(bgmTimer);bgmTimer=0;bgmLevel();}
+
+/* ===== 読み上げ ===== */
+const SS=window.speechSynthesis;let jaVoice=null;
+function pickVoice(){if(!SS)return;const v=SS.getVoices().filter(v=>/^ja/i.test(v.lang));jaVoice=v.find(x=>/Kyoko|Nanami|O-Ren|Google/.test(x.name))||v[0]||null;}
+if(SS){pickVoice();SS.onvoiceschanged=pickVoice;}
+const spoken=t=>t.replace(/○+/g,"なになに").replace(/[（(]/g,"、").replace(/[）)]/g,"、").replace(/〜/g,"から");
+function stopSay(){try{SS&&SS.cancel()}catch(e){}duck=false;bgmLevel();}
+function say(t){return new Promise(res=>{if(!SS||!PREF.voice){res();return;}
+  try{const u=new SpeechSynthesisUtterance(spoken(t));u.lang="ja-JP";if(jaVoice)u.voice=jaVoice;u.rate=1.06;
+    let done=false;const fin=()=>{if(!done){done=true;duck=false;bgmLevel();res();}};u.onend=fin;u.onerror=fin;
+    setTimeout(fin,1800+t.length*260);duck=true;bgmLevel();SS.speak(u);}catch(e){res();}});}
+
+/* ===== 採点 ===== */
+const norm=s=>s.normalize("NFKC").toLowerCase().replace(/[\s・、。,.!?！？\-「」『』（）()]/g,"")
+  .replace(/[ァ-ヶ]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0x60));
+function lev(a,b){const m=a.length,n=b.length;if(!m||!n)return Math.max(m,n);let p=[...Array(n+1).keys()];
+  for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c;}return p[n];}
+function grade1(x,raw){
+  const v=norm(raw);if(!v)return 0;
+  if(x.num){const d=parseInt(v.replace(/\D/g,""),10);if(d===x.num)return 5;if(!isNaN(d))return Math.abs(d-x.num)<=1?2:0;}
+  let best=0;
+  for(const a0 of x.a){const a=norm(a0);if(a===v)return 5;
+    const sim=1-lev(a,v)/Math.max(a.length,v.length);
+    const inc=(a.includes(v)&&v.length>=Math.max(2,a.length*.5))||(v.includes(a)&&v.length<=a.length+4);
+    best=Math.max(best,inc||sim>=.7?3:sim>=.4?2:0);}
+  return best;
+}
+const MEMO={5:["よくできました","花まる！","さすが本人級","完ぺき"],3:["おしい！","あと一歩","ほぼ正解だね"],2:["方向はいいね","がんばった","かすってる"],0:["ざんねん","次はいける","おぼえて帰ろう"],blank:["空欄はもったいない"],time:["時間切れ！"]};
+const pickM=k=>{const l=MEMO[k];return l[Math.floor(Math.random()*l.length)];};
+const MARK={
+  5:`<path d="M52 10 C80 10 94 32 92 54 C90 82 62 94 42 90 C16 86 6 60 12 38 C18 18 40 6 66 14"/><path class="d2" d="M40 46 C46 36 62 36 62 48 C62 60 44 62 42 52"/>`,
+  3:`<path d="M49 12 L90 84 L10 86 L51 14"/>`,2:`<path d="M49 12 L90 84 L10 86 L51 14"/>`,
+  0:`<path d="M18 18 L84 86"/><path class="d2" d="M84 16 L16 86"/>`
+};
+
+/* ===== 進行 ===== */
+let T=0,Q=TESTS[0].qs,idx=0,marks=[],answers=[],run=0,phase="home",tStart=0,tRaf=0,lastWarn=-1;
+const pick=$("pick");
+TESTS.forEach((t,k)=>{const b=document.createElement("button");b.type="button";b.className="tab";
+  b.innerHTML=`<strong>${t.t}</strong><span>${t.d}・${t.qs.length}問</span>`;
+  b.onclick=()=>{T=k;Q=TESTS[k].qs;paintTabs();SFX.tick();};pick.appendChild(b);});
+const paintTabs=()=>[...pick.children].forEach((b,j)=>b.setAttribute("aria-pressed",j===T));paintTabs();
+
+const TG={tgVoice:["voice","🗣 読み上げ"],tgBgm:["bgm","🎵 音楽"],tgSfx:["sfx","🔊 効果音"],tgTimer:["timer","⏱ 30秒タイマー"]};
+function paintTg(){for(const id in TG){const [k,l]=TG[id];$(id).textContent=l+(PREF[k]?" ON":" OFF");$(id).setAttribute("aria-pressed",PREF[k]);}
+  $("timerWrap").hidden=!PREF.timer;if(!SS)$("tgVoice").hidden=true;}
+for(const id in TG)$(id).onclick=()=>{const k=TG[id][0];PREF[k]=!PREF[k];savePref();paintTg();ac();
+  if(k==="bgm"){if(PREF.bgm&&phase!=="home")bgmStart();bgmLevel();}
+  if(k==="voice"&&!PREF.voice)stopSay();
+  if(k==="timer"&&phase==="ask"){if(PREF.timer)startTimer();else stopTimer();}
+  SFX.tick();};
+paintTg();
+
+function view(sec){["home","play","result"].forEach(s=>$(s).hidden=s!==sec);$("start").hidden=sec!=="home";window.scrollTo(0,0);}
+const total=()=>marks.reduce((s,p)=>s+(p||0),0);
+const wait=ms=>new Promise(r=>setTimeout(r,RM?Math.min(ms,300):ms));
+
+$("start").onclick=()=>{ac();marks=[];answers=[];idx=0;view("play");if(PREF.bgm)bgmStart();ask();};
+$("again").onclick=()=>$("start").onclick();
+$("back").onclick=$("quit").onclick=()=>{run++;stopTimer();stopSay();bgmStop();phase="home";view("home");};
+
+function paintTop(){
+  $("count").innerHTML=`第${idx+1}問 <small>/ ${Q.length}</small>`;
+  $("sofar").textContent=`ここまで ${total()}点`;
+  $("dots").innerHTML=Q.map((_,i)=>`<i class="${i===idx?"now":marks[i]!=null?"s"+marks[i]:""}"></i>`).join("");
+}
+async function ask(){
+  const my=++run;phase="ask";const x=Q[idx];
+  const card=$("card");card.className="card";void card.offsetWidth;card.classList.add("enter");
+  $("cat").textContent=x.c;$("qtext").textContent=x.q;$("pen").className="pen";$("pen").innerHTML="";
+  $("fb").hidden=true;$("ans").value="";$("ans").disabled=$("go").disabled=$("pass").disabled=false;
+  $("bar").style.transform="scaleX(1)";$("timer").classList.remove("low");$("tleft").textContent=`${LIMIT}秒`;
+  paintTop();SFX.whoosh();
+  setTimeout(()=>{if(my===run)try{$("ans").focus({preventScroll:true})}catch(e){}},350);
+  await say(`第${idx+1}問。${x.q}`);
+  if(my!==run||phase!=="ask")return;
+  if(PREF.timer)startTimer();
+}
+function startTimer(){stopTimer();tStart=performance.now();lastWarn=-1;
+  const loop=t=>{const left=LIMIT-(t-tStart)/1000;
+    $("bar").style.transform=`scaleX(${Math.max(0,left/LIMIT)})`;$("tleft").textContent=`のこり ${Math.max(0,Math.ceil(left))}秒`;
+    $("timer").classList.toggle("low",left<=10);
+    if(left<=5&&left>0&&Math.ceil(left)!==lastWarn){lastWarn=Math.ceil(left);SFX.warn();}
+    if(left<=0){tRaf=0;answer("time");return;}
+    tRaf=requestAnimationFrame(loop);};
+  tRaf=requestAnimationFrame(loop);}
+function stopTimer(){cancelAnimationFrame(tRaf);tRaf=0;}
+
+$("ansForm").addEventListener("submit",e=>{e.preventDefault();if(phase==="ask")answer("go");});
+$("pass").onclick=()=>{if(phase==="ask")answer("pass");};
+$("listen").onclick=()=>{ac();stopSay();say(Q[idx].q);};
+$("next").onclick=()=>{if(phase==="fb")next();};
+
+async function answer(how){
+  if(phase!=="ask")return;phase="fb";stopTimer();stopSay();const my=++run;
+  const x=Q[idx],raw=how==="pass"?"":$("ans").value;
+  const p=grade1(x,raw);marks[idx]=p;answers[idx]=raw;
+  const memo=pickM(!norm(raw)?(how==="time"?"time":"blank"):p);
+  $("ans").disabled=$("go").disabled=$("pass").disabled=true;
+  drawPen(p,memo);
+  $("card").classList.add(p===5?"ok":p===0?"ng":"part");
+  p===5?SFX.ok():p===0?SFX.ng():SFX.part();
+  $("yours").textContent=`あなたの答え：${raw.trim()||(how==="time"?"（時間切れ）":"（空欄）")}`;
+  $("right").innerHTML=`正解：<b>${x.show}</b>`;$("kai").textContent=x.k;
+  $("fb").hidden=false;paintTop();
+  setTimeout(()=>{try{$("next").focus({preventScroll:true})}catch(e){}},50);
+  if(!RM)$("card").scrollIntoView({behavior:"smooth",block:"nearest"});
+  await wait(800);if(my!==run)return;
+  await say(`${p}点。${memo}。`+(p<5?`正解は、${x.show}。`:"")+x.k);
+  if(my!==run)return;
+  await wait(PREF.voice?1100:2800);if(my!==run)return;
+  next();
+}
+function drawPen(p,memo){
+  const pen=$("pen");pen.className="pen";
+  pen.innerHTML=`<svg viewBox="0 0 100 100" aria-hidden="true">${MARK[p]}</svg><span class="pp">${p}<small>点</small></span><span class="memo"></span>`;
+  const m=pen.querySelector(".memo");
+  if(RM){pen.classList.add("done");m.textContent=memo;return;}
+  requestAnimationFrame(()=>requestAnimationFrame(()=>pen.classList.add("go")));
+  SFX.pen(0);SFX.pen(.2);
+  [...memo].forEach((ch,k)=>setTimeout(()=>{m.textContent+=ch;if(k%2===0)SFX.pen(0,.05);},400+k*75));
+}
+function next(){run++;stopSay();idx++;if(idx>=Q.length)finish();else ask();}
+
+/* ===== 結果 ===== */
+const cv=$("fx"),cx=cv.getContext("2d");let parts=[],raf=0;
+function burst(n,kind){
+  const W=cv.width=innerWidth,H=cv.height=innerHeight;
+  const cs=getComputedStyle(document.documentElement),cols=[cs.getPropertyValue("--river"),cs.getPropertyValue("--ok"),"#f2c14e","#e86f9a","#7aa7ff"];
+  for(let i=0;i<n;i++)parts.push(kind==="splash"
+    ?{x:W/2,y:H*.4,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,r:3+Math.random()*5,c:cols[0],life:90,drop:1}
+    :{x:Math.random()*W,y:-20-Math.random()*H*.5,vx:(Math.random()-.5)*3,vy:2+Math.random()*4,r:5+Math.random()*6,c:cols[i%cols.length],a:Math.random()*6,va:(Math.random()-.5)*.3,life:260});
+  if(!raf)tick();}
+function tick(){cx.clearRect(0,0,cv.width,cv.height);parts=parts.filter(p=>p.life-->0&&p.y<cv.height+40);
+  for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=p.drop?.45:.03;cx.fillStyle=p.c;cx.globalAlpha=Math.min(1,p.life/40);
+    if(p.drop){cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);cx.fill();}
+    else{p.a+=p.va;cx.save();cx.translate(p.x,p.y);cx.rotate(p.a);cx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);cx.restore();}}
+  cx.globalAlpha=1;raf=parts.length?requestAnimationFrame(tick):0;}
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function paintReview(){
+  $("review").innerHTML=Q.map((x,i)=>`<div class="rv"><span class="n">${String(i+1).padStart(2,"0")}</span>
+    <div class="body"><div class="q">${x.q}</div><div class="a">あなた：${esc((answers[i]||"").trim()||"（空欄）")} ／ 正解：${x.show}</div></div>
+    <span class="p">${marks[i]}点</span><button type="button" data-i="${i}">点を直す</button></div>`).join("");
+}
+$("review").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const i=+b.dataset.i;
+  marks[i]={5:3,3:2,2:0,0:5}[marks[i]];marks[i]===5?SFX.ok():marks[i]===0?SFX.ng():SFX.part();
+  paintReview();scoreBoard(false);stopSay();say(`第${i+1}問を${marks[i]}点に直しました。合計${total()}点。`);});
+
+function scoreBoard(anim){
+  const s=$("score"),tot=total(),rk=RANKS.find(r=>tot>=r[0]);
+  s.classList.remove("drop");
+  s.innerHTML=`<div class="eyebrow">${TESTS[T].t}</div><div class="pts"><span id="n">${anim?0:tot}</span><small> / 100点</small></div>
+    <div class="rank" style="visibility:${anim?"hidden":"visible"}">${rk[1]}</div><p class="rdesc" style="visibility:${anim?"hidden":"visible"}">${rk[2]}</p>
+    <div class="ladder">${RANKS.map(r=>`<div class="${r===rk?"me":""}"><span>${r[1]}</span><span>${r[0]===100?"100点":r[0]+"点〜"}</span></div>`).join("")}</div>`;
+  return rk;
+}
+async function finish(){
+  phase="result";stopTimer();view("result");paintReview();
+  const tot=total(),rk=scoreBoard(true),s=$("score"),n=$("n");
+  await say("採点結果を発表します。");
+  const dur=RM?0:1600,t0=performance.now();let last=-1;
+  (function step(t){const k=dur?Math.min(1,(t-t0)/dur):1,v=Math.round(tot*(1-Math.pow(1-k,3)));n.textContent=v;
+    if(v!==last){if(v%5===0)SFX.tick();last=v;}
+    if(k<1){requestAnimationFrame(step);return;}
+    s.querySelector(".rank").style.visibility=s.querySelector(".rdesc").style.visibility="visible";
+    s.classList.add("drop");s.querySelector(".pts").classList.add("shake");
+    SFX.splash();SFX.rank(tot);
+    if(!RM){burst(40,"splash");if(tot>=60)burst(tot>=100?260:tot>=80?160:90,"confetti");}
+    setTimeout(()=>say(`合計、${tot}点。ランクは、${rk[1]}。${rk[2]}`),tot>=100?1100:700);
+  })(performance.now());
+}
+view("home");
+</script>
+
+</body>
+</html>
