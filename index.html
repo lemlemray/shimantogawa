@@ -123,6 +123,30 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--river-soft);out
 .rv button{grid-column:2/4;justify-self:start;font:inherit;font-size:12px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:2px 10px;cursor:pointer}
 .rowbtn{display:flex;gap:8px;flex-wrap:wrap}
 .rowbtn>*{flex:1 1 160px}
+/* ランクと記録 */
+.status{margin-top:16px;border:1.5px solid var(--river);border-radius:6px;padding:14px 16px;display:grid;gap:8px;background:var(--bg)}
+.st-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.st-rank{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.3}
+.st-best{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.gauge{height:12px;border-radius:99px;background:var(--river-soft);overflow:hidden}
+.gauge i{display:block;height:100%;background:linear-gradient(90deg,var(--river),var(--ok));border-radius:99px;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.st-next{font-size:13px;font-weight:700;color:var(--river)}
+.st-meta{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.steps{display:flex;gap:3px}
+.steps span{flex:1;height:5px;border-radius:2px;background:var(--line)}
+.steps span.on{background:var(--river)}
+.tab .tb{font-size:12px;color:var(--river);font-weight:700}
+.badges{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.badge{font-size:12px;font-weight:900;padding:3px 10px;border-radius:99px;background:var(--river-soft);color:var(--river)}
+.badge.hot{background:var(--red);color:var(--paper)}
+.goal{margin-top:12px;font-size:14px;font-weight:700;color:var(--river)}
+#rankup{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 82%,transparent);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));backdrop-filter:blur(3px)}
+.ru{background:var(--paper);border:3px solid var(--river);border-radius:10px;padding:26px 22px;text-align:center;display:grid;gap:6px;width:min(360px,100%);animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.4) rotate(-6deg);opacity:0}}
+.ru-k{font-family:var(--display);font-weight:800;font-size:34px;color:var(--red);animation:shake .6s .4s}
+.ru-from{color:var(--muted);text-decoration:line-through;font-size:15px}
+.ru-arrow{color:var(--river);font-size:22px;line-height:1}
+.ru-to{font-family:var(--display);font-weight:800;font-size:28px;margin-bottom:10px}
 /* スマホ向け */
 button,.tab,.tg{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .tg,.listen,.rv button{min-height:40px}
@@ -150,13 +174,15 @@ button,.tab,.tg{touch-action:manipulation;-webkit-tap-highlight-color:transparen
 </style>
 
 <canvas id="fx"></canvas>
+<div id="rankup" hidden><div class="ru"><div class="ru-k">ランクアップ！</div><div class="ru-from" id="ruFrom"></div><div class="ru-arrow">↓</div><div class="ru-to" id="ruTo"></div><button class="main" id="ruOk" type="button">やったね</button></div></div>
 <div class="wrap">
 
 <section id="home" class="panel">
   <div class="eyebrow">島津耕造（亀山耕太郎）の歴史</div>
   <h1><span>しまんとがわの</span><br><span>しましまクイズ</span></h1>
   <p class="lead">一問一答で進みます。問題が読み上げられ、音楽が流れるなかで一問ずつ答えてください。答えると赤ペン先生がその場で採点し、解説を読んでから次の問題へ流れていきます。</p>
-  <div class="rules"><b>記述式</b><b>全20問・1問5点</b><b>おしいと3点か2点</b><b>1問30秒</b><b>100点満点</b></div>
+  <div class="rules"><b>記述式</b><b>毎回ちがう20問</b><b>1問5点・おしいと3点か2点</b><b>1問30秒</b><b>100点満点</b></div>
+  <div id="status" class="status"></div>
   <div id="pick" class="pick"></div>
 </section>
 
@@ -205,62 +231,113 @@ button,.tab,.tg{touch-action:manipulation;-webkit-tap-highlight-color:transparen
 </div>
 
 <script>
-/* ===== 問題（新しいテストは TESTS に足す） ===== */
-const TESTS=[
-{t:"第1回　人生編",d:"生まれ、建築の現場、ことば、信条",qs:[
- {c:"はじまり",q:"「島津耕造」はペンネーム。では、本名をフルネームで書いてください。",a:["亀山耕太郎","かめやまこうたろう"],show:"亀山耕太郎",k:"島津耕造は筆名。会社名のKSも、この筆名から来ています。"},
- {c:"はじまり",q:"島津耕造が生まれたのは西暦何年？",a:["1994"],num:1994,show:"1994年",k:"1994年、平成6年の生まれです。"},
- {c:"はじまり",q:"誕生日は何月何日？",a:["1月14日","一月十四日","1/14"],show:"1月14日",k:"冬のまんなか、1月14日生まれ。"},
- {c:"はじまり",q:"出身は埼玉県の何市？",a:["さいたま市","さいたま","さいたま市南区","文蔵","さいたま市南区文蔵"],show:"さいたま市（南区文蔵）",k:"さいたま市南区の文蔵が生まれた土地です。"},
- {c:"建築の現場",q:"2018年4月から2020年1月まで勤めた、京都の寺社仏閣専門の建設会社の名前は？",a:["伸和建設","しんわけんせつ"],show:"伸和建設",k:"寺社仏閣を専門にする京都の会社で、建築の現場を踏みました。"},
- {c:"建築の現場",q:"その会社で、本丸の現場監督を担当した京都の世界遺産は？",a:["二条城","元離宮二条城","にじょうじょう"],show:"二条城",k:"二条城の本丸で現場監督。いまの建築作品の土台はここにあります。"},
- {c:"建築の現場",q:"建設会社での仕事は、施工管理と、アルファベット3文字の何を使った図面作成？",a:["CAD","きゃど","CAD図面","CAD図面作成"],show:"CAD",k:"施工管理とCADでの図面作成を担当していました。"},
- {c:"建築の現場",q:"建設会社のあと、大阪で転職した先は「大阪市○○○○○教会」？",a:["コミュニティ","大阪市コミュニティ教会","コミュニティ教会"],show:"大阪市コミュニティ教会",k:"京都の建設会社から大阪へ。そののち千葉へ移ります。"},
- {c:"ことば",q:"俳句を詠むときの俳号を、漢字4文字で書いてください。",a:["亀川安行"],show:"亀川安行",k:"本名の「亀」をのこした俳号です。"},
- {c:"ことば",q:"俳号で応募した、第44回の新人賞は「○○現代俳句新人賞」？",a:["兜太","兜太現代俳句新人賞","とうた","兜太賞"],show:"兜太現代俳句新人賞",k:"俳人・金子兜太の名を冠した、現代俳句の新人賞です。"},
- {c:"ことば",q:"彼が考案した俳句の形式。「自由律俳句」ではなく、何と書く？",a:["自由率俳句","自由率"],show:"自由率俳句",k:"「律」ではなく「率」。Xでは「#自由率俳句」で発信しています。"},
- {c:"ことば",q:"自由率俳句が占いになる理由を書いた論考。タイトルは「○○のための言葉」？",a:["未来","未来のための言葉","みらい","みらいのためのことば"],show:"未来のための言葉",k:"季語を外した句は、まだない世界を呼び寄せる預言になる、という論です。"},
- {c:"ことば",q:"太宰治賞の応募作「恋路を邪魔する奴は○○の角に頭をぶつけて死ねないでいろ」。○○は？",a:["豆腐","とうふ"],show:"豆腐",k:"第43回太宰治賞に、筆名・島津耕造で応募する小説です。"},
- {c:"ことば",q:"『三四郎』『行人』で影響を受けた文豪は？",a:["夏目漱石","漱石","なつめそうせき"],show:"夏目漱石",k:"とくに漱石の後期作品から影響を受けています。"},
- {c:"信条",q:"彼の哲学では、AIは絵を描く人にとっての何？（漢字1文字）",a:["筆","ふで"],show:"筆",k:"AIは便利な道具ではなく筆。写真家にとってのカメラでもある、という命題です。"},
- {c:"信条",q:"対になる宣言「人間ができることはただ1つ、○○○」。○は？",a:["エラー","error"],show:"エラー",k:"AIは筆、そして人間にできるのはエラー。二つで一組の宣言です。"},
- {c:"信条",q:"「精進」ではない。コスパが悪いほど楽しい、という独自の価値観は？",a:["消尽","しょうじん"],show:"消尽",k:"同じ「しょうじん」でも、使い尽くすほうの消尽です。"},
- {c:"信条",q:"AIを使った画像制作を位置づけた造語「○○○○アート」は？",a:["概念象形","概念象形アート","がいねんしょうけい"],show:"概念象形アート",k:"概念を描くのではなく、概念が宿った現実をつくる表現です。"},
- {c:"いま",q:"「KS計画研究所」から、2026年9月の打ち合わせで決まった新しい会社名は？",a:["KS企画","けーえすきかく"],show:"KS企画",k:"9月18日の打ち合わせで「KS企画」に決まりました。"},
- {c:"いま",q:"Discordなどで使っている、カタカナ2文字の呼び名は？",a:["レム","lem"],show:"レム",k:"ツイキャスのアカウント名 lemlemrays にも、レムがいます。"}
-]},
-{t:"第2回　作品編",d:"建築、句集、小説、アプリ",qs:[
- {c:"建築",q:"建築計画「森の情景」は、東京のどの街に計画された？",a:["秋葉原","あきはばら","アキバ"],show:"秋葉原（アキバ・クリエイティブ・パーク）",k:"別名はアキバ・クリエイティブ・パーク。建物を巡るAI動画も作っています。"},
- {c:"建築",q:"集合住宅の作品「10の暮らし、10の○○○」。○に入るカタカナは？",a:["レベル","level"],show:"レベル",k:"世帯ごとに色を分けた、10の暮らしの集合住宅です。"},
- {c:"建築",q:"「10の暮らし」が参照した、洞窟住居で知られるイタリアの街は？",a:["マテーラ","マテラ","matera"],show:"マテーラ",k:"岩をくりぬいた洞窟住居で知られる街です。"},
- {c:"建築",q:"自由率俳句13句をラカン派精神分析で読み解いて設計した建築は「○○○○の寝所」？",a:["ボロメオ","ボロメオの寝所"],show:"ボロメオの寝所",k:"ラカンの「ボロメオの結び目」に通じる名前です。"},
- {c:"建築",q:"車椅子でも過ごせる段々畑の平屋「斜めの家」。想定した風土はどこ？",a:["沖縄","おきなわ","沖縄県"],show:"沖縄",k:"行き道と帰り道で回遊できる、沖縄の風土に合わせた家です。"},
- {c:"建築",q:"ラヴェルの楽譜から導いた建築。もとの曲は「亡き王女のための○○○○○」？",a:["パヴァーヌ","パバーヌ"],show:"パヴァーヌ",k:"楽譜を図面に読みかえる試みです。"},
- {c:"建築",q:"スタジアムの上に塔を建てる構想。大枠にしたローマの古代建築は？",a:["コロッセオ","コロセウム"],show:"コロッセオ",k:"コロッセオを大枠に、自作スケッチの塔を建てる構想です。"},
- {c:"建築",q:"建築「ここに在る館」のもとになった絵に書かれた英語は？",a:["IAMHERE","アイアムヒア"],show:"I AM HERE",k:"英語名は House of Hereness です。"},
- {c:"建築",q:"滝に打たれる姿を幾何学に抽象化した瞑想施設は「幾何学的○○建築」？",a:["滝行","たきぎょう","幾何学的滝行建築"],show:"幾何学的滝行建築",k:"台本つきの画像13枚で構成する作品です。"},
- {c:"建築",q:"自作スケッチ発の建築「水冠の塔と○○の家」。○○は？（漢字2文字）",a:["灯守","灯守の家"],show:"灯守の家",k:"塔と、それを守る家の組み合わせです。"},
- {c:"句と小説",q:"15句から建築を設計した句集「キャラメルポップコーンは○○」。○○は？",a:["膿む","うむ"],show:"膿む",k:"句の意味内容から建築を立ち上げ、動画にする計画です。"},
- {c:"句と小説",q:"自作小説「城の図面」の改稿版の仮題は？",a:["三本の塔","さんぼんのとう","3本の塔"],show:"三本の塔",k:"アニメ化とPC向けシナリオゲーム化も計画しています。"},
- {c:"句と小説",q:"自由率俳句で自分を占って出た句「俺の手で○○○○○いた土を踏む」。○は？",a:["腐らせて","くさらせて"],show:"腐らせて",k:"この句の情景から、建築を一棟設計しています。"},
- {c:"アプリと遊び",q:"樹冠ごとに作家を分けて展示する、自作のバーチャル美術館の名前は？",a:["大蛙美術館","DaiYMuseum","大蛙"],show:"大蛙美術館（DaiY Museum）",k:"森の情景の樹冠を展示室にする構想です。"},
- {c:"アプリと遊び",q:"自分の作品や経験を札にした、自作の対戦カードゲームの名前は？",a:["夜札","よふだ"],show:"夜札（よふだ）",k:"GitHub Pagesで公開しています。"},
- {c:"アプリと遊び",q:"声だけで練習する、自作のAI英会話アプリの名前は？",a:["英会話ラボ","えいかいわらぼ","eikaiwalab"],show:"英会話ラボ",k:"発音・文法・語彙・流暢さのフィードバックを目指しています。"},
- {c:"アプリと遊び",q:"話者を判別できる、自作の文字起こしアプリの名前は？",a:["ワケル","wakeru"],show:"ワケル（wakeru）",k:"話し手を「分ける」から来た名前です。"},
- {c:"アプリと遊び",q:"トレンドを新聞の一面風に見せるアプリ「EN新聞」。そのコラムの名前は？",a:["顕現志向","けんげんしこう"],show:"顕現志向",k:"「志向縁」という考え方とつながるコラムです。"},
- {c:"アプリと遊び",q:"Netlifyで公開している対話型Webアプリ「素御」。読み方をひらがなで。",a:["すみあ","sumia"],show:"すみあ",k:"素御と書いて、すみあ。"},
- {c:"これから",q:"ポーラ美術振興財団の在外研修で、研修先に希望した国は？",a:["タイ","タイ王国","thailand"],show:"タイ",k:"「10の暮らし、10のレベル」のAI動画で応募します。"}
-]}
+/* ===== 問題プール（set: life=人生 / work=作品）。毎回ここから20問を引く ===== */
+const POOL=[
+ {set:"life",c:"はじまり",q:"「島津耕造」はペンネーム。では、本名をフルネームで書いてください。",a:["亀山耕太郎","かめやまこうたろう"],show:"亀山耕太郎",k:"島津耕造は筆名。会社名のKSも、この筆名から来ています。"},
+ {set:"life",c:"はじまり",q:"島津耕造が生まれたのは西暦何年？",a:["1994"],num:1994,show:"1994年",k:"1994年、平成6年の生まれです。"},
+ {set:"life",c:"はじまり",q:"誕生日は何月何日？",a:["1月14日","一月十四日","1/14"],show:"1月14日",k:"冬のまんなか、1月14日生まれ。"},
+ {set:"life",c:"はじまり",q:"出身は埼玉県の何市？",a:["さいたま市","さいたま","さいたま市南区","文蔵","さいたま市南区文蔵"],show:"さいたま市（南区文蔵）",k:"さいたま市南区の文蔵が生まれた土地です。"},
+ {set:"life",c:"建築の現場",q:"2018年4月から2020年1月まで勤めた、京都の寺社仏閣専門の建設会社の名前は？",a:["伸和建設","しんわけんせつ"],show:"伸和建設",k:"寺社仏閣を専門にする京都の会社で、建築の現場を踏みました。"},
+ {set:"life",c:"建築の現場",q:"その建設会社で、本丸の現場監督を担当した京都の世界遺産は？",a:["二条城","元離宮二条城","にじょうじょう"],show:"二条城",k:"二条城の本丸で現場監督。いまの建築作品の土台はここにあります。"},
+ {set:"life",c:"建築の現場",q:"建設会社での仕事は、施工管理と、アルファベット3文字の何を使った図面作成？",a:["CAD","きゃど","CAD図面","CAD図面作成"],show:"CAD",k:"施工管理とCADでの図面作成を担当していました。"},
+ {set:"life",c:"建築の現場",q:"建設会社のあと、大阪で転職した先は「大阪市○○○○○教会」？",a:["コミュニティ","大阪市コミュニティ教会","コミュニティ教会"],show:"大阪市コミュニティ教会",k:"京都の建設会社から大阪へ。そののち千葉へ移ります。"},
+ {set:"life",c:"ことば",q:"俳句を詠むときの俳号を、漢字4文字で書いてください。",a:["亀川安行"],show:"亀川安行",k:"本名の「亀」をのこした俳号です。"},
+ {set:"life",c:"ことば",q:"俳号で応募した、第44回の新人賞は「○○現代俳句新人賞」？",a:["兜太","兜太現代俳句新人賞","とうた","兜太賞"],show:"兜太現代俳句新人賞",k:"俳人・金子兜太の名を冠した、現代俳句の新人賞です。"},
+ {set:"life",c:"ことば",q:"彼が考案した俳句の形式。「自由律俳句」ではなく、何と書く？",a:["自由率俳句","自由率"],show:"自由率俳句",k:"「律」ではなく「率」。Xでは「#自由率俳句」で発信しています。"},
+ {set:"life",c:"ことば",q:"自由率俳句が占いになる理由を書いた論考。タイトルは「○○のための言葉」？",a:["未来","未来のための言葉","みらい","みらいのためのことば"],show:"未来のための言葉",k:"季語を外した句は、まだない世界を呼び寄せる預言になる、という論です。"},
+ {set:"life",c:"ことば",q:"太宰治賞の応募作「恋路を邪魔する奴は○○の角に頭をぶつけて死ねないでいろ」。○○は？",a:["豆腐","とうふ"],show:"豆腐",k:"第43回太宰治賞に、筆名・島津耕造で応募する小説です。"},
+ {set:"life",c:"ことば",q:"応募する太宰治賞を主催している出版社は？",a:["筑摩書房","筑摩","ちくましょぼう"],show:"筑摩書房",k:"太宰治賞は筑摩書房の文学賞です。"},
+ {set:"life",c:"ことば",q:"第43回太宰治賞の締切は、12月の何日（消印有効）？",a:["10日","12月10日","10"],show:"12月10日",k:"2026年12月10日、消印有効です。"},
+ {set:"life",c:"ことば",q:"『三四郎』『行人』で影響を受けた文豪は？",a:["夏目漱石","漱石","なつめそうせき"],show:"夏目漱石",k:"とくに漱石の後期作品から影響を受けています。"},
+ {set:"life",c:"信条",q:"彼の哲学では、AIは絵を描く人にとっての何？（漢字1文字）",a:["筆","ふで"],show:"筆",k:"AIは便利な道具ではなく筆。写真家にとってのカメラでもある、という命題です。"},
+ {set:"life",c:"信条",q:"対になる宣言「人間ができることはただ1つ、○○○」。○は？",a:["エラー","error"],show:"エラー",k:"AIは筆、そして人間にできるのはエラー。二つで一組の宣言です。"},
+ {set:"life",c:"信条",q:"宣言「AIは新たに作る時に意味があるもので、○○は決してAIの意味をなさない」。○○は？",a:["模倣","もほう","真似","まね"],show:"模倣",k:"新しく作るためのAI。模倣のためではない、という宣言です。"},
+ {set:"life",c:"信条",q:"自分は、表現のどこに立っていると考えている？（漢字2文字）",a:["前衛","ぜんえい"],show:"前衛",k:"理解されなくても前衛であり続け、前の作品よりよい作品しか作らない、という覚悟です。"},
+ {set:"life",c:"信条",q:"「精進」ではない。コスパが悪いほど楽しい、という独自の価値観は？",a:["消尽","しょうじん"],show:"消尽",k:"同じ「しょうじん」でも、使い尽くすほうの消尽です。"},
+ {set:"life",c:"信条",q:"AIを使った画像制作を位置づけた造語「○○○○アート」は？",a:["概念象形","概念象形アート","がいねんしょうけい"],show:"概念象形アート",k:"概念を描くのではなく、概念が宿った現実をつくる表現です。"},
+ {set:"life",c:"信条",q:"師事していて、映画脚本の仕事も委託されている芸術家は？",a:["猪鼻秀一","猪鼻"],show:"猪鼻秀一",k:"美に対する真摯さを尊敬し、自分なりのやり方で恩を返すと決めている師です。"},
+ {set:"life",c:"好きなもの",q:"憧れている任侠映画のスターは「高倉○」？",a:["健","高倉健","たかくらけん"],show:"高倉健",k:"任侠映画とヒッチコックが好きな映画の柱です。"},
+ {set:"life",c:"好きなもの",q:"好きな映画監督。「サスペンスの神様」と呼ばれる人は？",a:["ヒッチコック","アルフレッドヒッチコック"],show:"ヒッチコック",k:"任侠映画と並ぶ、映画の好みのもう一本の柱です。"},
+ {set:"life",c:"好きなもの",q:"録音と編集の創作に使っている、昔ながらの記録媒体は？",a:["カセットテープ","カセット","テープ"],show:"カセットテープ",k:"カセットでの録音編集や、アンビエント音楽も作っています。"},
+ {set:"life",c:"好きなもの",q:"創作のテーマ「○○のない花を嗅ぐ」。○○は？",a:["匂い","におい","匂","香り"],show:"匂い",k:"他者と理解し合えなさ、不完全な繋がりを表す言葉です。"},
+ {set:"life",c:"好きなもの",q:"ペルソナ資料の口癖は「にゃん」と、もうひとつは？（4文字）",a:["そんなあ","そんなぁ"],show:"そんなあ",k:"「にゃん」と「そんなあ」。資料に書かれた口癖です。"},
+ {set:"life",c:"いま",q:"「KS計画研究所」から、2026年9月の打ち合わせで決まった新しい会社名は？",a:["KS企画","けーえすきかく"],show:"KS企画",k:"9月18日の打ち合わせで「KS企画」に決まりました。"},
+ {set:"life",c:"いま",q:"ライターとして業務委託で記事を書いている、ITニュースメディアは？",a:["イノベトピア","innovatopia"],show:"innovaTopia（イノベトピア）",k:"業務委託契約を結んでいる継続の案件です。"},
+ {set:"life",c:"いま",q:"Discordなどで使っている、カタカナ2文字の呼び名は？",a:["レム","lem"],show:"レム",k:"ツイキャスのアカウント名 lemlemrays にも、レムがいます。"},
+ {set:"life",c:"いま",q:"顔出しでライブ配信をしている配信サービスは？",a:["ツイキャス","TwitCasting","ツイットキャスティング"],show:"ツイキャス",k:"アカウントは lemlemrays。朝までの長時間配信もします。"},
+ {set:"work",c:"建築",q:"建築計画「森の情景」は、東京のどの街に計画された？",a:["秋葉原","あきはばら","アキバ"],show:"秋葉原（アキバ・クリエイティブ・パーク）",k:"別名はアキバ・クリエイティブ・パーク。建物を巡るAI動画も作っています。"},
+ {set:"work",c:"建築",q:"「森の情景」のAI動画につけている字幕は、日本語と何語？",a:["英語","えいご","english"],show:"英語",k:"日英の字幕つきで制作しています。"},
+ {set:"work",c:"建築",q:"集合住宅の作品「10の暮らし、10の○○○」。○に入るカタカナは？",a:["レベル","level"],show:"レベル",k:"世帯ごとに色を分けた、10の暮らしの集合住宅です。"},
+ {set:"work",c:"建築",q:"「10の暮らし」が参照した、洞窟住居で知られるイタリアの街は？",a:["マテーラ","マテラ","matera"],show:"マテーラ",k:"岩をくりぬいた洞窟住居で知られる街です。"},
+ {set:"work",c:"建築",q:"自由率俳句13句をラカン派精神分析で読み解いて設計した建築は「○○○○の寝所」？",a:["ボロメオ","ボロメオの寝所"],show:"ボロメオの寝所",k:"ラカンの「ボロメオの結び目」に通じる名前です。"},
+ {set:"work",c:"建築",q:"車椅子でも過ごせる段々畑の平屋「斜めの家」。想定した風土はどこ？",a:["沖縄","おきなわ","沖縄県"],show:"沖縄",k:"行き道と帰り道で回遊できる、沖縄の風土に合わせた家です。"},
+ {set:"work",c:"建築",q:"ラヴェルの楽譜から導いた建築。もとの曲は「亡き王女のための○○○○○」？",a:["パヴァーヌ","パバーヌ"],show:"パヴァーヌ",k:"楽譜を図面に読みかえる試みです。"},
+ {set:"work",c:"建築",q:"スタジアムの上に塔を建てる構想。大枠にしたローマの古代建築は？",a:["コロッセオ","コロセウム"],show:"コロッセオ",k:"コロッセオを大枠に、自作スケッチの塔を建てる構想です。"},
+ {set:"work",c:"建築",q:"建築「ここに在る館」のもとになった絵に書かれた英語は？",a:["IAMHERE","アイアムヒア"],show:"I AM HERE",k:"英語名は House of Hereness です。"},
+ {set:"work",c:"建築",q:"滝に打たれる姿を幾何学に抽象化した瞑想施設は「幾何学的○○建築」？",a:["滝行","たきぎょう","幾何学的滝行建築"],show:"幾何学的滝行建築",k:"台本つきの画像13枚で構成する作品です。"},
+ {set:"work",c:"建築",q:"自作スケッチ発の建築「水冠の塔と○○の家」。○○は？（漢字2文字）",a:["灯守","灯守の家"],show:"灯守の家",k:"塔と、それを守る家の組み合わせです。"},
+ {set:"work",c:"建築",q:"反った曲面プレートの外皮をまとう集合住宅。その形は「○○○の集合住宅」？",a:["円錐台","えんすいだい"],show:"円錐台",k:"自作スケッチから構想した、円錐台の集合住宅です。"},
+ {set:"work",c:"建築",q:"「2つの器が重なり合う家」の、もうひとつの呼び名は「○○○の家」？",a:["淡い色","淡い色の家","あわいいろ"],show:"淡い色の家",k:"自作スケッチ発の住宅で、動画化も計画しています。"},
+ {set:"work",c:"建築",q:"サナトリウムのような施設。ガラスの渡り廊下の先にある温室の形は？",a:["球体","球","きゅうたい"],show:"球体",k:"食堂、渡り廊下、球体の温室、扇形の居室、ビオトープでできた施設です。"},
+ {set:"work",c:"建築",q:"建築「祈り」でアイコンにしたのは、自分の体のどこの形？",a:["手","て","両手"],show:"手",k:"自分の手の形「祈り」をアイコンにした建築です。"},
+ {set:"work",c:"建築",q:"正方形の箱を斜めにずらして重ねた住宅。箱はいくつ？",a:["3","3つ","三つ","みっつ"],num:3,show:"3つ",k:"3つの正方形の箱を斜めにずらして重ねた家です。"},
+ {set:"work",c:"建築",q:"平屋の家「どこからでも『○○』外に出られる家」。○○は？",a:["少し","すこし"],show:"少し",k:"どこからでも、少しだけ外に出られる平屋です。"},
+ {set:"work",c:"建築",q:"「住む機会を作る」の付箋。「音楽があり ○○がある 五感にうったえる 建築」。○○は？",a:["匂い","におい","匂"],show:"匂い",k:"この付箋の言葉から、建築作品をまとめる企画が始まりました。"},
+ {set:"work",c:"句と小説",q:"15句から建築を設計した句集「キャラメルポップコーンは○○」。○○は？",a:["膿む","うむ"],show:"膿む",k:"句の意味内容から建築を立ち上げ、動画にする計画です。"},
+ {set:"work",c:"句と小説",q:"自作小説「城の図面」の改稿版の仮題は？",a:["三本の塔","さんぼんのとう","3本の塔"],show:"三本の塔",k:"アニメ化とPC向けシナリオゲーム化も計画しています。"},
+ {set:"work",c:"句と小説",q:"自由率俳句で自分を占って出た句「俺の手で○○○○○いた土を踏む」。○は？",a:["腐らせて","くさらせて"],show:"腐らせて",k:"この句の情景から、建築を一棟設計しています。"},
+ {set:"work",c:"映像",q:"八千代台北の町を歩いて撮った写真動画。使った写真は何枚？",a:["35","35枚"],num:35,show:"35枚",k:"哲学的な語りをつけて、YouTubeに上げる予定です。"},
+ {set:"work",c:"映像",q:"建築動画の指示文は、原画1枚から何枚の画像と台本を作る？",a:["13","13枚"],num:13,show:"13枚",k:"画像ナレーション動画メーカーと組み合わせて使います。"},
+ {set:"work",c:"映像",q:"KS企画がPVを作った、勝田台の喫茶店は「アートカフェ○○○○○」？",a:["ピクニック","ぴくにっく"],show:"アートカフェピクニック",k:"KS企画の広告の仕事のひとつです。"},
+ {set:"work",c:"映像",q:"概念象形アートの作品。街が巨大な幾何学だと感じさせる作品名は「街の○○○」？",a:["幾何学","街の幾何学","きかがく"],show:"街の幾何学",k:"「神々しさのない魔法」という指定で作った作品です。"},
+ {set:"work",c:"映像",q:"概念象形アートの核の一文「概念を描くのではなく、概念が○○○現実をつくる」。○は？",a:["宿った","やどった","宿る"],show:"宿った",k:"見えているものの中に、見えなかった意味を出現させる表現です。"},
+ {set:"work",c:"アプリと遊び",q:"樹冠ごとに作家を分けて展示する、自作のバーチャル美術館の名前は？",a:["大蛙美術館","DaiYMuseum","大蛙"],show:"大蛙美術館（DaiY Museum）",k:"森の情景の樹冠を展示室にする構想です。"},
+ {set:"work",c:"アプリと遊び",q:"大蛙美術館を制作したサービスは？",a:["Youware","ユーウェア"],show:"Youware",k:"Youwareで制作しています。"},
+ {set:"work",c:"アプリと遊び",q:"自分の作品や経験を札にした、自作の対戦カードゲームの名前は？",a:["夜札","よふだ"],show:"夜札（よふだ）",k:"GitHub Pagesで公開しています。"},
+ {set:"work",c:"アプリと遊び",q:"夜札やこのクイズを公開している、GitHubの無料公開サービスは？",a:["GitHubPages","githubpages","github","ギットハブページズ"],show:"GitHub Pages",k:"このクイズも、いまGitHub Pagesで動いています。"},
+ {set:"work",c:"アプリと遊び",q:"声だけで練習する、自作のAI英会話アプリの名前は？",a:["英会話ラボ","えいかいわらぼ","eikaiwalab"],show:"英会話ラボ",k:"発音・文法・語彙・流暢さのフィードバックを目指しています。"},
+ {set:"work",c:"アプリと遊び",q:"話者を判別できる、自作の文字起こしアプリの名前は？",a:["ワケル","wakeru"],show:"ワケル（wakeru）",k:"話し手を「分ける」から来た名前です。"},
+ {set:"work",c:"アプリと遊び",q:"トレンドを新聞の一面風に見せるアプリ「EN新聞」。そのコラムの名前は？",a:["顕現志向","けんげんしこう"],show:"顕現志向",k:"「志向縁」という考え方とつながるコラムです。"},
+ {set:"work",c:"アプリと遊び",q:"EN新聞のもとにある、彼が考えた概念は「○○縁」？",a:["志向","志向縁","しこう"],show:"志向縁",k:"X上の占いも、この志向縁の考え方から始めます。"},
+ {set:"work",c:"アプリと遊び",q:"X上で始める志向縁占い。1回いくら？",a:["200","200円"],num:200,show:"200円",k:"怪しくない固定ツイートを用意して始めます。"},
+ {set:"work",c:"アプリと遊び",q:"Netlifyで公開している対話型Webアプリ「素御」。読み方をひらがなで。",a:["すみあ","sumia"],show:"すみあ",k:"素御と書いて、すみあ。"},
+ {set:"work",c:"アプリと遊び",q:"素御は、Gemini APIから何を使ったローカル実行に移る方針？",a:["Ollama","オラマ","オーラマ"],show:"Ollama",k:"手元のパソコンで動かす方向へ移行します。"},
+ {set:"work",c:"アプリと遊び",q:"本をめくる感覚を目指すスマホ用リーダーアプリ。読むのはどの文庫？",a:["青空文庫","あおぞらぶんこ"],show:"青空文庫",k:"しおり、スワイプでメモ、字体・行間調整を備える構想です。"},
+ {set:"work",c:"アプリと遊び",q:"盲学校の理療向けカルテ管理ソフトが対応する画面読み上げソフトは「PC-○○○○○ Neo」？",a:["Talker","トーカー","pctalker","pctalkerneo"],show:"PC-Talker Neo",k:"見える人も見えない人も使える、晴盲両用のソフトです。"},
+ {set:"work",c:"これから",q:"ポーラ美術振興財団の在外研修で、研修先に希望した国は？",a:["タイ","タイ王国","thailand"],show:"タイ",k:"「10の暮らし、10のレベル」のAI動画で応募します。"}
+];
+const COURSES=[
+ {key:"mix",t:"おまかせ",d:"全範囲から毎回ちがう20問"},
+ {key:"life",t:"人生編",d:"生まれ、建築の現場、ことば、信条"},
+ {key:"work",t:"作品編",d:"建築、句集、映像、アプリ"}
 ];
 const RANKS=[
  [100,"しまんとの主","島津耕造そのもの。あるいは本人。"],
- [80,"清流のしましま","縞模様まで見えている、かなりの通。"],
- [60,"中流のしましま","流れの真ん中にいます。あと少しで清流。"],
+ [85,"大河のしましま","海まであと少し。主の座が見えています。"],
+ [70,"清流のしましま","縞模様まで見えている、かなりの通。"],
+ [55,"中流のしましま","流れの真ん中。清流まであと少し。"],
  [40,"支流のしましま","本流に合流する手前。作品をもっと見よう。"],
  [20,"小川のしましま","せせらぎ程度。まずは自由率俳句から。"],
  [0,"水たまり","これから雨が降れば川になります。"]
 ];
-const LIMIT=30;
+const rankOf=p=>RANKS.find(r=>p>=r[0]);
+const rankIdx=p=>RANKS.length-1-RANKS.findIndex(r=>p>=r[0]);
+const nextRank=p=>[...RANKS].reverse().find(r=>r[0]>p);
+const LIMIT=30,PER=20;
+
+/* ===== 記録（このブラウザに保存） ===== */
+const REC={best:{},last:{},plays:0,seen:{},mastered:{}};
+try{Object.assign(REC,JSON.parse(localStorage.getItem("shima-rec")||"{}"))}catch(e){}
+const saveRec=()=>{try{localStorage.setItem("shima-rec",JSON.stringify(REC))}catch(e){}};
+const bestAll=()=>Math.max(0,...Object.values(REC.best));
+function draw(key){
+  const pool=POOL.filter(x=>key==="mix"||x.set===key);
+  const scored=pool.map(x=>({x,w:(REC.seen[x.q]||0)+(REC.mastered[x.q]?1.5:0)+Math.random()*1.2}));
+  scored.sort((a,b)=>a.w-b.w);
+  const pickd=scored.slice(0,PER).map(o=>o.x);
+  for(let i=pickd.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pickd[i],pickd[j]]=[pickd[j],pickd[i]];}
+  return pickd;
+}
 
 /* ===== 設定 ===== */
 const RM=matchMedia("(prefers-reduced-motion:reduce)").matches;
@@ -350,12 +427,25 @@ const MARK={
 };
 
 /* ===== 進行 ===== */
-let T=0,Q=TESTS[0].qs,idx=0,marks=[],answers=[],run=0,phase="home",tStart=0,tRaf=0,lastWarn=-1;
+let T=0,Q=[],idx=0,marks=[],answers=[],run=0,phase="home",tStart=0,tRaf=0,lastWarn=-1;
+try{T=Math.min(COURSES.length-1,+localStorage.getItem("shima-course")||0)}catch(e){}
 const pick=$("pick");
-TESTS.forEach((t,k)=>{const b=document.createElement("button");b.type="button";b.className="tab";
-  b.innerHTML=`<strong>${t.t}</strong><span>${t.d}・${t.qs.length}問</span>`;
-  b.onclick=()=>{T=k;Q=TESTS[k].qs;paintTabs();SFX.tick();};pick.appendChild(b);});
-const paintTabs=()=>[...pick.children].forEach((b,j)=>b.setAttribute("aria-pressed",j===T));paintTabs();
+function paintTabs(){pick.innerHTML="";COURSES.forEach((c,k)=>{const b=document.createElement("button");b.type="button";b.className="tab";
+  const n=POOL.filter(x=>c.key==="mix"||x.set===c.key).length,bs=REC.best[c.key];
+  b.innerHTML=`<strong>${c.t}</strong><span>${c.d}（${n}問から）</span><span class="tb">${bs!=null?"ベスト "+bs+"点":"まだ挑戦していません"}</span>`;
+  b.setAttribute("aria-pressed",k===T);
+  b.onclick=()=>{T=k;try{localStorage.setItem("shima-course",k)}catch(e){};paintTabs();SFX.tick();};pick.appendChild(b);});}
+function paintStatus(){
+  const b=bestAll(),rk=rankOf(b),nx=nextRank(b),ri=rankIdx(b);
+  const lo=rk[0],hi=nx?nx[0]:100,pct=nx?Math.round((b-lo)/(hi-lo)*100):100;
+  const mastered=Object.keys(REC.mastered).filter(q=>POOL.some(x=>x.q===q)).length;
+  $("status").innerHTML=`<div class="st-head"><div><div class="eyebrow">いまのランク</div><div class="st-rank">${rk[1]}</div></div><div class="st-best">ベスト ${REC.plays?b+"点":"―"}</div></div>
+    <div class="steps">${RANKS.slice().reverse().map((r,i)=>`<span class="${i<=ri?"on":""}" title="${r[1]}"></span>`).join("")}</div>
+    <div class="gauge"><i style="width:${REC.plays?pct:0}%"></i></div>
+    <div class="st-next">${nx?`あと ${hi-b}点で「${nx[1]}」にランクアップ`:"最高ランク到達。花まるで全問制覇をめざそう"}</div>
+    <div class="st-meta"><span>遊んだ回数 ${REC.plays}回</span><span>花まる制覇 ${mastered} / ${POOL.length}問</span></div>`;
+}
+paintTabs();paintStatus();
 
 const TG={tgVoice:["voice","🗣 読み上げ"],tgBgm:["bgm","🎵 音楽"],tgSfx:["sfx","🔊 効果音"],tgTimer:["timer","⏱ 30秒タイマー"]};
 function paintTg(){for(const id in TG){const [k,l]=TG[id];$(id).textContent=l+(PREF[k]?" ON":" OFF");$(id).setAttribute("aria-pressed",PREF[k]);}
@@ -371,9 +461,9 @@ function view(sec){["home","play","result"].forEach(s=>$(s).hidden=s!==sec);$("s
 const total=()=>marks.reduce((s,p)=>s+(p||0),0);
 const wait=ms=>new Promise(r=>setTimeout(r,RM?Math.min(ms,300):ms));
 
-$("start").onclick=()=>{ac();marks=[];answers=[];idx=0;view("play");if(PREF.bgm)bgmStart();ask();};
+$("start").onclick=()=>{ac();Q=draw(COURSES[T].key);marks=[];answers=[];idx=0;view("play");if(PREF.bgm)bgmStart();ask();};
 $("again").onclick=()=>$("start").onclick();
-$("back").onclick=$("quit").onclick=()=>{run++;stopTimer();stopSay();bgmStop();phase="home";view("home");};
+$("back").onclick=$("quit").onclick=()=>{run++;stopTimer();stopSay();bgmStop();phase="home";paintTabs();paintStatus();view("home");};
 
 function paintTop(){
   $("count").innerHTML=`第${idx+1}問 <small>/ ${Q.length}</small>`;
@@ -468,16 +558,26 @@ $("review").addEventListener("click",e=>{const b=e.target.closest("button");if(!
   paintReview();scoreBoard(false);stopSay();say(`第${i+1}問を${marks[i]}点に直しました。合計${total()}点。`);});
 
 function scoreBoard(anim){
-  const s=$("score"),tot=total(),rk=RANKS.find(r=>tot>=r[0]);
+  const s=$("score"),tot=total(),rk=rankOf(tot);
   s.classList.remove("drop");
-  s.innerHTML=`<div class="eyebrow">${TESTS[T].t}</div><div class="pts"><span id="n">${anim?0:tot}</span><small> / 100点</small></div>
+  s.innerHTML=`<div class="eyebrow">${COURSES[T].t}</div><div class="pts"><span id="n">${anim?0:tot}</span><small> / 100点</small></div>
     <div class="rank" style="visibility:${anim?"hidden":"visible"}">${rk[1]}</div><p class="rdesc" style="visibility:${anim?"hidden":"visible"}">${rk[2]}</p>
-    <div class="ladder">${RANKS.map(r=>`<div class="${r===rk?"me":""}"><span>${r[1]}</span><span>${r[0]===100?"100点":r[0]+"点〜"}</span></div>`).join("")}</div>`;
+    <div class="badges" id="badges"></div><div class="goal" id="goal"></div><div class="ladder">${RANKS.map(r=>`<div class="${r===rk?"me":""}"><span>${r[1]}</span><span>${r[0]===100?"100点":r[0]+"点〜"}</span></div>`).join("")}</div>`;
   return rk;
 }
 async function finish(){
   phase="result";stopTimer();view("result");paintReview();
-  const tot=total(),rk=scoreBoard(true),s=$("score"),n=$("n");
+  const tot=total(),rk=scoreBoard(true),s=$("score"),n=$("n"),key=COURSES[T].key;
+  const prevBestAll=bestAll(),prevBest=REC.best[key],prevLast=REC.last[key],firstTime=REC.plays===0;
+  REC.plays++;REC.last[key]=tot;if(prevBest==null||tot>prevBest)REC.best[key]=tot;
+  Q.forEach((x,i)=>{REC.seen[x.q]=(REC.seen[x.q]||0)+1;if(marks[i]===5)REC.mastered[x.q]=1;});
+  saveRec();
+  const newBestAll=bestAll(),rankedUp=!firstTime&&rankIdx(newBestAll)>rankIdx(prevBestAll)||(firstTime&&rankIdx(newBestAll)>0);
+  const bd=[];
+  if(prevBest!=null&&tot>prevBest)bd.push(`<span class="badge hot">ベスト更新！ +${tot-prevBest}点</span>`);
+  if(prevLast!=null)bd.push(`<span class="badge">前回 ${prevLast}点 → 今回 ${tot}点</span>`);
+  bd.push(`<span class="badge">${REC.plays}回目の挑戦</span>`);
+  const nx=nextRank(newBestAll);
   await say("採点結果を発表します。");
   const dur=RM?0:1600,t0=performance.now();let last=-1;
   (function step(t){const k=dur?Math.min(1,(t-t0)/dur):1,v=Math.round(tot*(1-Math.pow(1-k,3)));n.textContent=v;
@@ -485,11 +585,24 @@ async function finish(){
     if(k<1){requestAnimationFrame(step);return;}
     s.querySelector(".rank").style.visibility=s.querySelector(".rdesc").style.visibility="visible";
     s.classList.add("drop");s.querySelector(".pts").classList.add("shake");
+    $("badges").innerHTML=bd.join("");
+    $("goal").textContent=nx?`次の目標：あと ${nx[0]-newBestAll}点で「${nx[1]}」。問題は毎回かわります。`:"最高ランクです。花まる制覇をめざそう。";
     SFX.splash();SFX.rank(tot);
-    if(!RM){burst(40,"splash");if(tot>=60)burst(tot>=100?260:tot>=80?160:90,"confetti");}
-    setTimeout(()=>say(`合計、${tot}点。ランクは、${rk[1]}。${rk[2]}`),tot>=100?1100:700);
+    if(!RM){burst(40,"splash");if(tot>=55)burst(tot>=100?260:tot>=85?180:tot>=70?130:80,"confetti");}
+    setTimeout(async()=>{
+      await say(`合計、${tot}点。${prevBest!=null&&tot>prevBest?"ベスト更新です。":""}ランクは、${rk[1]}。${rk[2]}`);
+      if(rankedUp)showRankUp(rankOf(prevBestAll),rankOf(newBestAll));
+      else if(nx&&PREF.voice)say(`次の${nx[1]}まで、あと${nx[0]-newBestAll}点。`);
+    },tot>=100?1100:700);
   })(performance.now());
 }
+function showRankUp(from,to){
+  $("ruFrom").textContent=from[1];$("ruTo").textContent=to[1];$("rankup").hidden=false;
+  try{navigator.vibrate&&navigator.vibrate([60,40,60,40,160])}catch(e){}
+  SFX.rank(100);if(!RM)burst(220,"confetti");
+  say(`ランクアップ！${from[1]}から、${to[1]}になりました！`);
+}
+$("ruOk").onclick=()=>{$("rankup").hidden=true;SFX.tick();};
 view("home");
 </script>
 
